@@ -642,6 +642,16 @@ QUntypedPropertyBinding makeBinding(const QUntypedPropertyData *d,
 
 template<class T>
 inline constexpr QBindableInterface iface = {
+#if defined(Q_OS_WIN) && defined(__clang__)
+    // This workaround can be removed if LLVM fix https://github.com/llvm/llvm-project/issues/50900
+    [](const QUntypedPropertyData *d, void *value) { getter(d, value); },
+    [](QUntypedPropertyData *d, const void *value) { setter(d, value); },
+    [](const QUntypedPropertyData *d) -> QUntypedPropertyBinding { return getBinding(d); },
+    &setBinding<T>,
+    &makeBinding<T>,
+    [](const QUntypedPropertyData *d, QPropertyObserver *observer) { setObserver(d, observer); },
+    &QMetaType::fromType<T>,
+#else
     &getter,
     &setter,
     &getBinding,
@@ -649,6 +659,7 @@ inline constexpr QBindableInterface iface = {
     &makeBinding<T>,
     &setObserver,
     &QMetaType::fromType<T>,
+#endif
 };
 }
 }
